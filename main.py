@@ -2,6 +2,20 @@ from tkinter import *
 from tkinter import messagebox
 from random import randint, choice, shuffle
 import pyperclip
+import json
+
+
+def search():
+    cur_website = website_entry.get()
+    with open("pw_database.json", mode="r") as file:
+        data = json.load(file)
+
+        if cur_website in data:
+            cur_pw = data[cur_website]["password"]
+            cur_eu = data[cur_website]["email"]
+            messagebox.showinfo(title=f"Your credentials for {cur_website}", message=f"Email: {cur_eu} \nPassword: {cur_pw}")
+        else:
+            messagebox.showinfo(title=f"Error", message=f"There are no credentials for {cur_website}")
 
 
 # ---------------------------- PASSWORD GENERATOR ------------------------------- #
@@ -36,6 +50,11 @@ def add():
     cur_website = website_entry.get()
     cur_eu = eu_entry.get()
     cur_pw = password_entry.get()
+    new_data = {
+        cur_website: {"email": cur_eu,
+                      "password": cur_pw
+                      }
+    }
 
     if cur_website == "" or cur_eu == "" or cur_pw == "":
         messagebox.showinfo(title="Oops", message="Please make sure you haven't left any fields empty.")
@@ -45,8 +64,21 @@ def add():
                                                f"\nEmail: {cur_eu} \nPassword: {cur_pw} \nIs it ok to save?")
 
         if is_ok:
-            with open("pw_database.csv", mode="a") as file:
-                file.write(f"{cur_website} | {cur_eu} | {cur_pw}\n")
+            try:
+                with open("pw_database.json", mode="r") as file:
+                    data = json.load(file)
+
+            except FileNotFoundError:
+                with open("pw_database.json", mode="w") as file:
+                    json.dump(new_data, file, indent=4)
+
+            else:
+                data.update(new_data)
+
+                with open("pw_database.json", mode="w") as file:
+                    json.dump(data, file, indent=4)
+
+            finally:
                 website_entry.delete(0, END)
                 password_entry.delete(0, END)
 
@@ -65,15 +97,15 @@ canvas.grid(row=0, column=1)
 website = Label(text="Website:")
 website.grid(row=1, column=0)
 
-website_entry = Entry(width=35)
-website_entry.grid(row=1, column=1, columnspan=2)
+website_entry = Entry()
+website_entry.grid(row=1, column=1)
 website_entry.focus()
 website_entry.get()
 
 eu = Label(text="Email/Username:")
 eu.grid(row=2, column=0)
 
-eu_entry = Entry(width=35)
+eu_entry = Entry(width=38)
 eu_entry.grid(row=2, column=1, columnspan=2)
 eu_entry.insert(0, "YOUR_MAIL_ADDRESS")
 eu_entry.get()
@@ -90,5 +122,8 @@ button_password.grid(row=3, column=2)
 
 button_add = Button(text="Add", command=add, width=36)
 button_add.grid(row=4, column=1, columnspan=2)
+
+button_search = Button(text="Search", command=search)
+button_search.grid(row=1, column=2)
 
 window.mainloop()
